@@ -21,7 +21,6 @@ env = environ.Env(
 BASE_DIR = Path(__file__).resolve().parent.parent
 environ.Env.read_env(BASE_DIR / ".env")
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
@@ -32,7 +31,6 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS").split(" ")
-
 
 # Application definition
 
@@ -48,7 +46,7 @@ DJANGO_APPS = [
 
 SITE_ID = 1
 
-THIRD_PARTY_APPS=[
+THIRD_PARTY_APPS = [
     "rest_framework",
     "django_filters",
     "django_countries",
@@ -94,7 +92,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'real_estate.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
@@ -104,7 +101,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -124,7 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -138,7 +133,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
@@ -148,3 +142,119 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import logging
+import logging.config
+
+from django.utils.log import DEFAULT_LOGGING
+
+logger = logging.getLogger(__name__)
+
+LOG_LEVEL = "INFO"
+
+request_logger = logging.getLogger("django.request")
+
+# Default logging for Django. This sends an email to the site admins on every
+# HTTP 500 error. Depending on DEBUG, all other log records are either sent to
+# the console (DEBUG=True) or discarded (DEBUG=False) by means of the
+# require_debug_true filter. This configuration is quoted in
+# docs/ref/logging.txt; please amend it there if edited here
+
+
+DEFAULT_LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "mail_admins"],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
+
+def configure_logging(logging_config, logging_settings):
+    if logging_config:
+        # First find the logging configuration function ...
+        logging_config_func = import_string(logging_config)
+
+        logging.config.dictConfig(DEFAULT_LOGGING)
+
+        # ... then invoke it with the logging settings
+        if logging_settings:
+            logging_config_func(logging_settings)
+
+
+
+# logging.config.dictConfig(
+#     {
+#         "version": 1,
+#         "disable_existing_loggers": False,
+#         "formatters": {
+#             "console": {
+#                 "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+#             },
+#             "file": {"format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"},
+#             "django.server": DEFAULT_LOGGING["formatters"]["django.server"],
+#         },
+#         "handlers": {
+#             "console": {
+#                 "class": "logging.StreamHandler",
+#                 "formatter": "console",
+#             },
+#             "file": {
+#                 "level": "INFO",
+#                 "class": "logging.FileHandler",
+#                 "formatter": "file",
+#                 "filename": "logs/real_estate.log",
+#             },
+#             "django.server": DEFAULT_LOGGING["formatters"]["django.server"],
+#         },
+#         "loggers": {
+#             "": {"level": "INFO", "handlers": ["console", "file"], "propogate": False},
+#             "apps": {
+#                 "level": "INFO", "handlers": ["console", ], "propogate": False
+#             },
+#             "django.server": DEFAULT_LOGGING["loggers"]["django.server"],
+#
+#         }
+#
+#     }
+# )
